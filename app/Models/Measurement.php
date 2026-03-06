@@ -9,7 +9,7 @@ class Measurement extends Model
 {
     use HasHomeScope;
 
-    protected $fillable = ['home_id', 'location_id', 'label', 'value', 'unit'];
+    protected $fillable = ['home_id', 'location_id', 'label', 'value', 'unit', 'note'];
 
     protected $casts = [
         'value' => 'decimal:2',

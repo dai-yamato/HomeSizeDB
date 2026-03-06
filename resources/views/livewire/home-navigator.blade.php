@@ -33,6 +33,8 @@ new class extends Component {
     // Measurement input
     public $newLabel = '';
     public $newValue = '';
+    
+    public $locationNote = '';
 
     protected $listeners = ['refresh' => '$refresh'];
 
@@ -52,7 +54,16 @@ new class extends Component {
     {
         $this->locationId = $id;
         $this->view = 'detail';
+        $loc = Location::find($id);
+        $this->locationNote = $loc->note ?? '';
         $this->resetMeasurementInput();
+    }
+
+    public function updatedLocationNote()
+    {
+        if ($this->locationId) {
+            Location::where('id', $this->locationId)->update(['note' => $this->locationNote]);
+        }
     }
 
     public function goBack($to)
@@ -327,9 +338,15 @@ new class extends Component {
                     <button type="button" wire:click="editLocation" class="absolute top-4 right-4 p-3 bg-white/95 text-indigo-600 rounded-2xl shadow-xl border border-indigo-50 transition-all hover:scale-110 active:scale-95 z-50">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
-                <svg class="w-20 h-20 mb-4 text-indigo-500/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">{!! $this->getIconPath($currentLocation->icon) !!}</svg>
-                <h2 class="text-2xl font-black text-slate-800 tracking-tight">{{ $currentLocation->name }}</h2>
-            </div>
+                    <svg class="w-20 h-20 mb-4 text-indigo-500/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">{!! $this->getIconPath($currentLocation->icon) !!}</svg>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">{{ $currentLocation->name }}</h2>
+                    <div class="w-full mt-6">
+                        <label class="block text-[10px] font-bold text-indigo-300 mb-1 uppercase tracking-widest text-center">場所のメモ</label>
+                        <textarea wire:model.live.debounce.1000ms="locationNote" placeholder="全体に関するメモ（例：配管の都合で右奥は使えない など）" rows="2"
+                            class="w-full bg-white/60 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-300 p-3 text-sm resize-none text-slate-700 placeholder:text-indigo-200 text-center"></textarea>
+                        <p class="text-[9px] text-indigo-200 mt-1 text-center font-bold">入力すると自動で保存されます</p>
+                    </div>
+                </div>
 
                 <!-- Measurements List -->
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
@@ -385,6 +402,7 @@ new class extends Component {
                                 </button>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
