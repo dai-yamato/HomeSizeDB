@@ -56,7 +56,8 @@ class InvitationController extends Controller
             return redirect()->route('register');
         }
 
-        if ($user->email !== $invitation->email) {
+        // In multi-tenant systems, we allow anyone with the link to join if email is null
+        if ($invitation->email && $user->email !== $invitation->email) {
             return redirect()->route('dashboard')->with('error', 'This invitation is for a different email address.');
         }
 

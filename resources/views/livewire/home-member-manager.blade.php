@@ -9,13 +9,11 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 
 new class extends Component {
-    public $email = '';
     public $role = 'viewer';
 
     public function invite()
     {
         $this->validate([
-            'email' => 'required|email',
             'role' => 'required|in:owner,editor,viewer',
         ]);
 
@@ -24,7 +22,7 @@ new class extends Component {
 
         $invitation = Invitation::create([
             'home_id' => $homeId,
-            'email' => $this->email,
+            'email' => null, // No email required for link-based invitation
             'role' => $this->role,
             'token' => Str::random(32),
             'expires_at' => now()->addDays(7),
@@ -36,7 +34,6 @@ new class extends Component {
             ['token' => $invitation->token]
         );
 
-        $this->email = '';
         $this->dispatch('invitation-sent', url: $url);
     }
 
@@ -58,7 +55,7 @@ new class extends Component {
             {{ __('メンバー招待・管理') }}
         </h2>
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('現在選択中の「家」に家族やメンバーを招待できます。') }}
+            {{ __('招待リンクを発行して、家族やパートナーをこの「家」に招待できます。') }}
         </p>
     </header>
 
@@ -70,67 +67,76 @@ new class extends Component {
                     @foreach($home->users as $user)
                         <li class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs">
+                                <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs uppercase">
                                     {{ substr($user->name, 0, 1) }}
                                 </div>
                                 <span class="text-sm font-medium text-gray-700">{{ $user->name }}</span>
                             </div>
-                            <span class="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded-full uppercase">{{ $user->pivot->role }}</span>
+                            <span class="text-[10px] px-2 py-1 bg-gray-100 text-gray-500 rounded-full font-bold uppercase">{{ $user->pivot->role }}</span>
                         </li>
                     @endforeach
                 </ul>
             </div>
 
-            <form wire:submit="invite" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <x-input-label for="invite-email" :value="__('メールアドレス')" />
-                        <x-text-input wire:model="email" id="invite-email" type="email" class="mt-1 block w-full" placeholder="family@example.com" />
-                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                    </div>
-                    <div>
-                        <x-input-label for="invite-role" :value="__('権限')" />
-                        <select wire:model="role" id="invite-role" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                            <option value="viewer">閲覧者 (Viewer)</option>
-                            <option value="editor">編集者 (Editor)</option>
-                            <option value="owner">管理者 (Owner)</option>
+            <div class="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                <h3 class="text-sm font-bold text-gray-700 mb-4">新しい招待リンクを発行</h3>
+                <div class="flex flex-col sm:flex-row items-end gap-4">
+                    <div class="flex-1 w-full">
+                        <x-input-label for="invite-role" :value="__('付与する権限')" />
+                        <select wire:model="role" id="invite-role" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm transition-all">
+                            <option value="viewer">閲覧者 (Viewer) - 閲覧のみ</option>
+                            <option value="editor">編集者 (Editor) - 追加・削除可能</option>
+                            <option value="owner">管理者 (Owner) - メンバー招待も可能</option>
                         </select>
                     </div>
+                    <button wire:click="invite" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">
+                        招待リンクを作成
+                    </button>
                 </div>
+            </div>
 
-                <div class="flex items-center gap-4">
-                    <x-primary-button>{{ __('招待を送る') }}</x-primary-button>
+            <div x-data="{ show: false, url: '' }" 
+                 x-on:invitation-sent.window="show = true; url = $event.detail.url"
+                 x-show="show" 
+                 class="p-6 bg-indigo-50 rounded-3xl border border-indigo-100 animate-in zoom-in-95 duration-300"
+                 x-cloak>
+                <div class="flex flex-col md:flex-row gap-6 items-center">
+                    <div class="shrink-0 bg-white p-3 rounded-2xl shadow-sm">
+                        <img :src="'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=' + encodeURIComponent(url)" 
+                             alt="QR Code" 
+                             class="w-32 h-32 rounded-lg">
+                    </div>
+                    <div class="flex-1 space-y-3">
+                        <p class="text-sm text-indigo-900 font-bold">招待URLを共有してください:</p>
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="url" readonly class="flex-1 bg-white border-indigo-200 rounded-xl text-xs p-3 text-gray-500 focus:ring-0">
+                            <button @click="navigator.clipboard.writeText(url); alert('コピーしました')" 
+                                    class="bg-indigo-600 text-white px-4 py-3 rounded-xl text-xs font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all">
+                                Copy
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-indigo-400 font-medium italic">※このリンクは7日間有効です。相手がログインすると「家」が共有されます。</p>
+                    </div>
                 </div>
-            </form>
+            </div>
 
             @if(count($invitations) > 0)
-                <div class="mt-6">
-                    <h3 class="text-sm font-bold text-gray-700 mb-3 text-amber-600">承諾待ちの招待</h3>
-                    <ul class="space-y-2">
+                <div class="mt-8 pt-8 border-t border-gray-100">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">有効な招待リンク</h3>
+                    <div class="space-y-2">
                         @foreach($invitations as $inv)
-                            <li class="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-100">
-                                <span class="text-sm text-amber-800">{{ $inv->email }}</span>
-                                <span class="text-[10px] text-amber-500 italic">Expires {{ $inv->expires_at->diffForHumans() }}</span>
-                            </li>
+                            <div class="flex items-center justify-between bg-white px-4 py-2 rounded-xl border border-gray-100 italic">
+                                <span class="text-xs text-gray-400 font-bold uppercase">{{ $inv->role }} Link</span>
+                                <span class="text-[10px] text-gray-300">Expires {{ $inv->expires_at->diffForHumans() }}</span>
+                            </div>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
             @endif
         </div>
-
-        <div x-data="{ show: false, url: '' }" 
-             x-on:invitation-sent.window="show = true; url = $event.detail.url"
-             x-show="show" 
-             class="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl animate-in fade-in slide-in-from-top-1"
-             x-cloak>
-            <p class="text-sm text-green-800 font-bold mb-2">招待リンクを作成しました:</p>
-            <div class="flex items-center gap-2">
-                <input type="text" x-model="url" readonly class="flex-1 bg-white border-green-200 rounded-lg text-xs p-2 text-gray-500">
-                <button @click="navigator.clipboard.writeText(url); alert('コピーしました')" class="bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-bold">Copy</button>
-            </div>
-            <p class="mt-2 text-[10px] text-green-600">※デモ版のため招待メールは送信されません。このURLを直接メンバーに送ってください。</p>
-        </div>
     @else
-        <p class="mt-4 text-sm text-red-500 bg-red-50 p-4 rounded-xl">家が選択されていません。先に家を作成または選択してください。</p>
+        <div class="mt-4 p-8 bg-slate-50 border border-slate-100 rounded-[2rem] text-center">
+            <p class="text-slate-400 font-bold italic text-sm">家が選択されていないため、招待機能は利用できません。</p>
+        </div>
     @endif
 </section>
