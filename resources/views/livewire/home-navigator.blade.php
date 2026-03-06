@@ -6,11 +6,16 @@ use App\Models\Floor;
 use App\Models\Room;
 use App\Models\Location;
 use App\Models\Measurement;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 new class extends Component {
-    use WithFileUploads;
+    
+    public $currentHomeId;
+    
+    public function mount()
+    {
+        $this->currentHomeId = app(\App\Services\HomeContext::class)->getCurrentHomeId();
+    }
 
     public $view = 'floors';
     public $floorId = null;
@@ -24,7 +29,6 @@ new class extends Component {
     // Measurement input
     public $newLabel = '';
     public $newValue = '';
-    public $image;
 
     protected $listeners = ['refresh' => '$refresh'];
 
@@ -68,6 +72,11 @@ new class extends Component {
             'newName' => 'required|min:1',
         ]);
 
+        if (!$this->currentHomeId) {
+            $this->addError('newName', '管理する家が選択されていません。先に家を登録してください。');
+            return;
+        }
+
         if ($this->view === 'floors') {
             Floor::create(['name' => $this->newName]);
         } elseif ($this->view === 'rooms') {
@@ -108,24 +117,6 @@ new class extends Component {
         Measurement::destroy($id);
     }
 
-
-    public function uploadImage()
-    {
-        $this->validate([
-            'image' => 'image|max:2048',
-        ]);
-
-        $location = Location::find($this->locationId);
-        if ($location->image_path) {
-            Storage::disk('public')->delete($location->image_path);
-        }
-
-        $path = $this->image->store('locations', 'public');
-        $location->update(['image_path' => $path]);
-
-        $this->image = null;
-    }
-
     private function resetMeasurementInput()
     {
         $this->newLabel = '';
@@ -135,7 +126,8 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'floors' => Floor::all(),
+            'hasHome' => !is_null($this->currentHomeId),
+            'floors' => $this->currentHomeId ? Floor::all() : collect(),
             'rooms' => $this->floorId ? Room::where('floor_id', $this->floorId)->get() : [],
             'locations' => $this->roomId ? Location::where('room_id', $this->roomId)->get() : [],
             'currentLocation' => $this->locationId ? Location::with('measurements')->find($this->locationId) : null,
@@ -182,8 +174,22 @@ new class extends Component {
         </ol>
     </nav>
 
-    <!-- Content Area -->
-    <div class="transition-all duration-300">
+    @if(!$hasHome)
+        <div class="bg-white rounded-[2.5rem] shadow-xl shadow-indigo-100/50 p-10 text-center border border-indigo-50">
+            <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </div>
+            <h2 class="text-2xl font-black text-gray-900 mb-4 tracking-tight">家を登録しましょう</h2>
+            <p class="text-gray-500 font-medium mb-8 leading-relaxed">
+                寸法データを記録するには、まず管理する「家」を登録する必要があります。
+            </p>
+            <a href="{{ route('profile') }}" class="inline-block w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                設定ページで家を作成する
+            </a>
+        </div>
+    @else
+        <!-- Content Area -->
+        <div class="transition-all duration-300">
         @if($view === 'floors')
             <div class="flex items-center justify-between mb-4 px-1">
                 <h2 class="text-xl font-bold text-gray-800">階層を選択</h2>
@@ -243,13 +249,9 @@ new class extends Component {
                     <button wire:click="selectLocation({{ $location->id }})" 
                         class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-left hover:shadow-md transition-all active:scale-95">
                         <div class="aspect-square bg-gray-100 relative">
-                            @if($location->image_path)
-                                <img src="{{ Storage::url($location->image_path) }}" class="w-full h-full object-cover">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center text-gray-300">
-                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <div class="w-full h-full flex items-center justify-center text-indigo-100 bg-indigo-50">
+                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                 </div>
-                            @endif
                         </div>
                         <div class="p-3">
                             <h3 class="font-bold text-gray-800 text-sm truncate">{{ $location->name }}</h3>
@@ -265,23 +267,10 @@ new class extends Component {
         @elseif($view === 'detail')
             <div class="space-y-6">
                 <!-- Location Image Section -->
-                <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group">
-                    <div class="aspect-video bg-gray-200 relative">
-                        @if($currentLocation->image_path)
-                            <img src="{{ Storage::url($currentLocation->image_path) }}" class="w-full h-full object-cover">
-                        @endif
-                        
-                        <label class="absolute bottom-4 right-4 bg-white/90 backdrop-blur p-3 rounded-2xl shadow-lg cursor-pointer hover:bg-white transition-colors">
-                            <input type="file" wire:model="image" class="hidden" wire:change="uploadImage">
-                            <span wire:loading.remove wire:target="image">
-                                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            </span>
-                            <span wire:loading wire:target="image">
-                                <svg class="animate-spin w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            </span>
-                        </label>
-                    </div>
-                </div>
+            <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group p-8 flex flex-col items-center justify-center text-slate-300">
+                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <p class="font-bold text-slate-400">{{ $currentLocation->name }}</p>
+            </div>
 
                 <!-- Measurements List -->
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
@@ -342,6 +331,7 @@ new class extends Component {
             </div>
         @endif
     </div>
+    @endif
 
     <!-- Add Item Modal -->
     @if($showAddModal)
