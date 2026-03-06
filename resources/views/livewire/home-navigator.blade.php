@@ -25,6 +25,7 @@ new class extends Component {
     // Modals/Forms
     public $showAddModal = false;
     public $newName = '';
+    public $selectedIcon = 'box';
 
     // Measurement input
     public $newLabel = '';
@@ -87,11 +88,13 @@ new class extends Component {
         } elseif ($this->view === 'locations') {
             Location::create([
                 'room_id' => $this->roomId,
-                'name' => $this->newName
+                'name' => $this->newName,
+                'icon' => $this->selectedIcon
             ]);
         }
 
         $this->newName = '';
+        $this->selectedIcon = 'box';
         $this->showAddModal = false;
     }
 
@@ -151,6 +154,20 @@ new class extends Component {
             $crumbs[] = ['label' => $location->name, 'view' => 'detail'];
         }
         return $crumbs;
+    }
+
+    private function getIconPath($name)
+    {
+        $icons = [
+            'box' => '<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />',
+            'shelf' => '<path d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18M15 3v18" />',
+            'cabinet' => '<path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm0 6h14M5 15h14M11 3v6M13 3v6M11 9v6M13 9v6M11 15v6M13 15v6" />',
+            'room' => '<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />',
+            'closet' => '<path d="M4 4h16v16H4V4zm8 0v16M8 10h.01M16 10h.01" />',
+            'window' => '<path d="M4 4h16v16H4V4zm0 8h16M12 4v16" />',
+            'appliance' => '<path d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />',
+        ];
+        return $icons[$name] ?? $icons['box'];
     }
 }; ?>
 
@@ -249,13 +266,13 @@ new class extends Component {
                     <button wire:click="selectLocation({{ $location->id }})" 
                         class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-left hover:shadow-md transition-all active:scale-95">
                         <div class="aspect-square bg-gray-100 relative">
-                                <div class="w-full h-full flex items-center justify-center text-indigo-100 bg-indigo-50">
-                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <div class="w-full h-full flex items-center justify-center text-indigo-400 bg-indigo-50/50">
+                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $this->getIconPath($location->icon) !!}</svg>
                                 </div>
                         </div>
                         <div class="p-3">
                             <h3 class="font-bold text-gray-800 text-sm truncate">{{ $location->name }}</h3>
-                            <p class="text-xs text-gray-500 mt-1">{{ $location->measurements_count ?? $location->measurements()->count() }} 件</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{{ $location->measurements_count ?? $location->measurements()->count() }} items</p>
                         </div>
                     </button>
                 @empty
@@ -267,9 +284,9 @@ new class extends Component {
         @elseif($view === 'detail')
             <div class="space-y-6">
                 <!-- Location Image Section -->
-            <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group p-8 flex flex-col items-center justify-center text-slate-300">
-                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <p class="font-bold text-slate-400">{{ $currentLocation->name }}</p>
+            <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group p-10 flex flex-col items-center justify-center text-indigo-100 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white">
+                <svg class="w-20 h-20 mb-4 text-indigo-500/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">{!! $this->getIconPath($currentLocation->icon) !!}</svg>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">{{ $currentLocation->name }}</h2>
             </div>
 
                 <!-- Measurements List -->
@@ -358,6 +375,20 @@ new class extends Component {
                                 class="w-full bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 p-4 text-lg font-bold placeholder:text-gray-300">
                             @error('newName') <span class="text-rose-500 text-xs mt-2 ml-1 block font-bold">{{ $message }}</span> @enderror
                         </div>
+
+                        @if($view === 'locations')
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-3 ml-1 uppercase tracking-widest">アイコンを選択</label>
+                            <div class="grid grid-cols-4 gap-3">
+                                @foreach(['box', 'shelf', 'cabinet', 'room', 'closet', 'window', 'appliance'] as $iconName)
+                                    <button type="button" wire:click="$set('selectedIcon', '{{ $iconName }}')" 
+                                        class="aspect-square flex items-center justify-center rounded-2xl border-2 transition-all {{ $selectedIcon === $iconName ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-lg shadow-indigo-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200' }}">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">{!! $this->getIconPath($iconName) !!}</svg>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 
