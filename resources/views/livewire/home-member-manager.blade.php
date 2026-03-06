@@ -102,7 +102,7 @@ new class extends Component {
                  x-cloak>
                 <div class="flex flex-col md:flex-row gap-6 items-center">
                     <div class="shrink-0 bg-white p-3 rounded-2xl shadow-sm">
-                        <img :src="'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=' + encodeURIComponent(url)" 
+                        <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(url)" 
                              alt="QR Code" 
                              class="w-32 h-32 rounded-lg">
                     </div>
