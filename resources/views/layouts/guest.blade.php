@@ -6,6 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,7 +20,7 @@
             <div class="mb-8">
                 <a href="/" wire:navigate class="flex flex-col items-center gap-2 group">
                     <div class="w-16 h-16 bg-white rounded-[2rem] shadow-xl shadow-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                        <svg class="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        <x-application-logo class="w-10 h-10 text-indigo-600" />
                     </div>
                     <span class="text-xl font-black text-gray-900 tracking-tighter">HomeSize DB</span>
                 </a>

@@ -1,0 +1,10 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- House outline -->
+    <path d="M15 45L50 15L85 45V85H15V45Z" fill="#4f46e5" fill-opacity="0.1" stroke="#4f46e5" stroke-width="6" stroke-linejoin="round"/>
+    <!-- Door -->
+    <path d="M40 85V55H60V85" stroke="#4f46e5" stroke-width="6" stroke-linejoin="round"/>
+    <!-- Left dimension line & arrows -->
+    <path d="M5 85V15 M2 80L5 85L8 80 M2 20L5 15L8 20" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Bottom dimension line & arrows -->
+    <path d="M15 95H85 M20 92L15 95L20 98 M80 92L85 95L80 98" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
