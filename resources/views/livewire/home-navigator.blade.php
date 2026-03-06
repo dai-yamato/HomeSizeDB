@@ -24,8 +24,11 @@ new class extends Component {
 
     // Modals/Forms
     public $showAddModal = false;
+    public $showEditModal = false;
     public $newName = '';
+    public $editName = '';
     public $selectedIcon = 'box';
+    public $editIcon = 'box';
 
     // Measurement input
     public $newLabel = '';
@@ -98,6 +101,35 @@ new class extends Component {
         $this->showAddModal = false;
     }
 
+    public function editLocation()
+    {
+        $location = Location::find($this->locationId);
+        $this->editName = $location->name;
+        $this->editIcon = $location->icon;
+        $this->showEditModal = true;
+    }
+
+    public function updateLocation()
+    {
+        $this->validate([
+            'editName' => 'required|min:1',
+        ]);
+
+        $location = Location::find($this->locationId);
+        $location->update([
+            'name' => $this->editName,
+            'icon' => $this->editIcon,
+        ]);
+
+        $this->showEditModal = false;
+    }
+
+    public function deleteLocation()
+    {
+        Location::destroy($this->locationId);
+        $this->goBack('locations');
+    }
+
     public function addMeasurement()
     {
         $this->validate([
@@ -156,17 +188,23 @@ new class extends Component {
         return $crumbs;
     }
 
+    private function getIcons()
+    {
+        return [
+            ['id' => 'box', 'label' => '標準', 'path' => '<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />'],
+            ['id' => 'shelf', 'label' => '棚', 'path' => '<path d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18M15 3v18" />'],
+            ['id' => 'cabinet', 'label' => 'タンス', 'path' => '<path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm0 6h14M5 15h14M11 3v6M13 3v6M11 9v6M13 9v6M11 15v6M13 15v6" />'],
+            ['id' => 'closet', 'label' => 'クローゼット', 'path' => '<path d="M4 4h16v16H4V4zm8 0v16M8 10h.01M16 10h.01" />'],
+            ['id' => 'room', 'label' => '部屋', 'path' => '<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />'],
+            ['id' => 'window', 'label' => '窓・開口', 'path' => '<path d="M4 4h16v16H4V4zm0 8h16M12 4v16" />'],
+            ['id' => 'appliance', 'label' => '家電', 'path' => '<path d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />'],
+            ['id' => 'furniture', 'label' => '家具', 'path' => '<path d="M4 12h16M4 18h16M4 6h16M12 6v12" />'],
+        ];
+    }
+
     private function getIconPath($name)
     {
-        $icons = [
-            'box' => '<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />',
-            'shelf' => '<path d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18M15 3v18" />',
-            'cabinet' => '<path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm0 6h14M5 15h14M11 3v6M13 3v6M11 9v6M13 9v6M11 15v6M13 15v6" />',
-            'room' => '<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />',
-            'closet' => '<path d="M4 4h16v16H4V4zm8 0v16M8 10h.01M16 10h.01" />',
-            'window' => '<path d="M4 4h16v16H4V4zm0 8h16M12 4v16" />',
-            'appliance' => '<path d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />',
-        ];
+        $icons = collect($this->getIcons())->pluck('path', 'id')->toArray();
         return $icons[$name] ?? $icons['box'];
     }
 }; ?>
@@ -208,8 +246,9 @@ new class extends Component {
         <!-- Content Area -->
         <div class="transition-all duration-300">
         @if($view === 'floors')
-            <div class="flex items-center justify-between mb-4 px-1">
-                <h2 class="text-xl font-bold text-gray-800">階層を選択</h2>
+            <div wire:key="view-floors" class="space-y-4">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-xl font-bold text-gray-800">階層を選択</h2>
                 <button wire:click="$set('showAddModal', true)" class="text-indigo-600 font-bold p-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
                     + 追加
                 </button>
@@ -232,10 +271,11 @@ new class extends Component {
                     </div>
                 @endforelse
             </div>
-
+            </div>
         @elseif($view === 'rooms')
-            <div class="flex items-center justify-between mb-4 px-1">
-                <h2 class="text-xl font-bold text-gray-800">部屋を選択</h2>
+            <div wire:key="view-rooms" class="space-y-4">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-xl font-bold text-gray-800">部屋を選択</h2>
                 <button wire:click="$set('showAddModal', true)" class="text-indigo-600 font-bold p-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
                     + 追加
                 </button>
@@ -253,10 +293,11 @@ new class extends Component {
                     <p class="text-center text-gray-500 py-10">部屋が見つかりません</p>
                 @endforelse
             </div>
-
+            </div>
         @elseif($view === 'locations')
-            <div class="flex items-center justify-between mb-4 px-1">
-                <h2 class="text-xl font-bold text-gray-800">場所を選択</h2>
+            <div wire:key="view-locations" class="space-y-4">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-xl font-bold text-gray-800">場所を選択</h2>
                 <button wire:click="$set('showAddModal', true)" class="text-indigo-600 font-bold p-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
                     + 追加
                 </button>
@@ -279,12 +320,13 @@ new class extends Component {
                     <div class="col-span-2 text-center text-gray-500 py-10 font-medium">登録された場所がありません</div>
                 @endforelse
             </div>
-
-
+            </div>
         @elseif($view === 'detail')
-            <div class="space-y-6">
-                <!-- Location Image Section -->
-            <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group p-10 flex flex-col items-center justify-center text-indigo-100 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white">
+            <div wire:key="view-detail" class="space-y-6">
+                <div class="relative bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden group p-10 flex flex-col items-center justify-center text-indigo-100 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white">
+                    <button type="button" wire:click="editLocation" class="absolute top-4 right-4 p-3 bg-white/95 text-indigo-600 rounded-2xl shadow-xl border border-indigo-50 transition-all hover:scale-110 active:scale-95 z-50">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
                 <svg class="w-20 h-20 mb-4 text-indigo-500/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">{!! $this->getIconPath($currentLocation->icon) !!}</svg>
                 <h2 class="text-2xl font-black text-slate-800 tracking-tight">{{ $currentLocation->name }}</h2>
             </div>
@@ -378,12 +420,13 @@ new class extends Component {
 
                         @if($view === 'locations')
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-400 mb-3 ml-1 uppercase tracking-widest">アイコンを選択</label>
-                            <div class="grid grid-cols-4 gap-3">
-                                @foreach(['box', 'shelf', 'cabinet', 'room', 'closet', 'window', 'appliance'] as $iconName)
-                                    <button type="button" wire:click="$set('selectedIcon', '{{ $iconName }}')" 
-                                        class="aspect-square flex items-center justify-center rounded-2xl border-2 transition-all {{ $selectedIcon === $iconName ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-lg shadow-indigo-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200' }}">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">{!! $this->getIconPath($iconName) !!}</svg>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-3 ml-1 uppercase tracking-widest">種類を選択</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach($this->getIcons() as $icon)
+                                    <button type="button" wire:click="$set('selectedIcon', '{{ $icon['id'] }}')" 
+                                        class="flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all {{ $selectedIcon === $icon['id'] ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-lg shadow-indigo-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200' }}">
+                                        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">{!! $icon['path'] !!}</svg>
+                                        <span class="text-[8px] font-bold">{{ $icon['label'] }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -401,6 +444,61 @@ new class extends Component {
                         class="flex-1 px-4 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
                         保存する
                     </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Edit Location Modal -->
+    @if($showEditModal)
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-md" wire:click="$set('showEditModal', false)"></div>
+            <div class="relative bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden transform transition-all border border-white/20">
+                <div class="p-8">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-black text-gray-900">場所の編集</h3>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 ml-1 uppercase tracking-widest">名前</label>
+                            <input type="text" wire:model="editName"
+                                class="w-full bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 p-4 text-lg font-bold">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-3 ml-1 uppercase tracking-widest">種類を選択</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach($this->getIcons() as $icon)
+                                    <button type="button" wire:click="$set('editIcon', '{{ $icon['id'] }}')" 
+                                        class="flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all {{ $editIcon === $icon['id'] ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-lg shadow-indigo-100' : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200' }}">
+                                        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">{!! $icon['path'] !!}</svg>
+                                        <span class="text-[8px] font-bold">{{ $icon['label'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50/50 p-6 flex flex-col gap-3 border-t border-gray-100/50">
+                    <button wire:click="updateLocation" 
+                        class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
+                        更新する
+                    </button>
+                    <div class="flex gap-3">
+                        <button wire:click="$set('showEditModal', false)" 
+                            class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-all">
+                            キャンセル
+                        </button>
+                        <button wire:click="deleteLocation" onclick="confirm('本当にこの場所と、紐付くすべての寸法データを削除しますか？') || event.stopImmediatePropagation()"
+                            class="flex-1 py-3 text-rose-500 font-bold hover:bg-rose-50 rounded-xl transition-all">
+                            場所を削除
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

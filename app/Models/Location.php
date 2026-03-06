@@ -9,7 +9,7 @@ class Location extends Model
 {
     use HasHomeScope;
 
-    protected $fillable = ['home_id', 'room_id', 'name', 'image_path'];
+    protected $fillable = ['home_id', 'room_id', 'name', 'icon'];
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\Room, $this>
