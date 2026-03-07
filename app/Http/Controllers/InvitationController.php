@@ -44,21 +44,17 @@ class InvitationController extends Controller
             ->where('expires_at', '>', now())
             ->firstOrFail();
 
-        if (!$request->hasValidSignature()) {
-            abort(403);
-        }
-
         $user = Auth::user();
 
-        // If not logged in, redirect to register/login with token in session
+        // If not logged in, redirect to register/login with intended URL
         if (!$user) {
-            session(['invitation_token' => $token]);
-            return redirect()->route('register');
+            session(['url.intended' => $request->fullUrl()]);
+            return redirect()->route('register')->with('status', '招待を承諾するには、アカウントの作成またはログインを行ってください。');
         }
 
         // In multi-tenant systems, we allow anyone with the link to join if email is null
         if ($invitation->email && $user->email !== $invitation->email) {
-            return redirect()->route('dashboard')->with('error', 'This invitation is for a different email address.');
+            return redirect()->route('dashboard')->with('error', 'この招待は別のメールアドレス向けです。');
         }
 
         $user->homes()->syncWithoutDetaching([
@@ -67,6 +63,6 @@ class InvitationController extends Controller
 
         $invitation->delete();
 
-        return redirect()->route('dashboard')->with('status', 'Successfully joined the home!');
+        return redirect()->route('dashboard')->with('status', '家に参加しました！');
     }
 }

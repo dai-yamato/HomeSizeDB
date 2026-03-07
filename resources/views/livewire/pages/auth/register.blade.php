@@ -32,7 +32,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         Auth::login($user);
 
-        $this->redirect(route('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 }; ?>
 
@@ -41,6 +41,9 @@ new #[Layout('layouts.guest')] class extends Component
         <h1 class="text-3xl font-black text-gray-900 tracking-tight">はじめましょう！</h1>
         <p class="mt-2 text-gray-500 font-medium">アカウントを作成して住宅データを整理しましょう</p>
     </div>
+
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form wire:submit="register" class="space-y-5">
         <!-- Name -->
